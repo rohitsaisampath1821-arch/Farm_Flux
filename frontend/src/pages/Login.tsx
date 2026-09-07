@@ -266,10 +266,7 @@ function Login() {
                   operations.
                 </p>
 
-                <form
-                  onSubmit={handleAdminLogin}
-                  className="mt-5"
-                >
+                <form onSubmit={handleAdminLogin} className="mt-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="mb-2 block text-xs font-medium text-white/55">
@@ -296,11 +293,7 @@ function Login() {
 
                       <div className="relative">
                         <input
-                          type={
-                            showAdminPassword
-                              ? "text"
-                              : "password"
-                          }
+                          type={showAdminPassword ? "text" : "password"}
                           value={adminPassword}
                           onChange={(e) => {
                             setAdminPassword(e.target.value);
@@ -314,9 +307,7 @@ function Login() {
                         <button
                           type="button"
                           onClick={() =>
-                            setShowAdminPassword(
-                              !showAdminPassword
-                            )
+                            setShowAdminPassword(!showAdminPassword)
                           }
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-white/35 transition hover:text-white"
                         >
@@ -361,9 +352,7 @@ function Login() {
                       disabled={adminLoading}
                       className="group flex items-center gap-2 rounded-xl bg-[#9fca72] px-7 py-3 text-sm font-semibold text-[#101411] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#b4d48f] hover:shadow-[0_10px_35px_rgba(159,202,114,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {adminLoading
-                        ? "Signing in..."
-                        : "Sign in"}
+                      {adminLoading ? "Signing in..." : "Sign in"}
 
                       <ArrowRight
                         size={16}
@@ -391,14 +380,11 @@ function Login() {
                 </h2>
 
                 <p className="mt-2 max-w-xl text-sm leading-6 text-white/40">
-                  Access your buyer account and discover produce
-                  directly from farmers and FPOs.
+                  Access your buyer account and discover produce directly
+                  from farmers and FPOs.
                 </p>
 
-                <form
-                  onSubmit={handleBuyerLogin}
-                  className="mt-5"
-                >
+                <form onSubmit={handleBuyerLogin} className="mt-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="mb-2 block text-xs font-medium text-white/55">
@@ -425,11 +411,7 @@ function Login() {
 
                       <div className="relative">
                         <input
-                          type={
-                            showBuyerPassword
-                              ? "text"
-                              : "password"
-                          }
+                          type={showBuyerPassword ? "text" : "password"}
                           value={buyerPassword}
                           onChange={(e) => {
                             setBuyerPassword(e.target.value);
@@ -443,9 +425,7 @@ function Login() {
                         <button
                           type="button"
                           onClick={() =>
-                            setShowBuyerPassword(
-                              !showBuyerPassword
-                            )
+                            setShowBuyerPassword(!showBuyerPassword)
                           }
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-white/35 transition hover:text-white"
                         >
@@ -490,15 +470,27 @@ function Login() {
                       disabled={buyerLoading}
                       className="group flex items-center gap-2 rounded-xl border border-[#9fca72]/30 bg-[#9fca72]/10 px-7 py-3 text-sm font-semibold text-[#b4d48f] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#9fca72]/50 hover:bg-[#9fca72]/15 hover:shadow-[0_10px_35px_rgba(159,202,114,0.12)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {buyerLoading
-                        ? "Signing in..."
-                        : "Enter Portal"}
+                      {buyerLoading ? "Signing in..." : "Enter Portal"}
 
                       <ArrowRight
                         size={16}
                         className="transition-transform duration-300 group-hover:translate-x-1"
                       />
                     </button>
+                  </div>
+
+                  {/* SIGN UP */}
+                  <div className="mt-4 text-center">
+                    <p className="text-xs text-white/40">
+                      Don't have an account?
+                      <button
+                        type="button"
+                        onClick={() => navigate("/buyer/signup")}
+                        className="ml-2 font-medium text-[#a8cf7a] transition hover:text-[#c5e89a]"
+                      >
+                        Sign up →
+                      </button>
+                    </p>
                   </div>
                 </form>
 

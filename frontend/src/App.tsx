@@ -14,6 +14,10 @@ import MyPurchases from "./pages/MyPurchases";
 import MarketInsights from "./pages/MarketInsights";
 import AdminProducts from "./pages/AdminProducts";
 import Buyers from "./pages/Buyers";
+import BuyerSignup from "./pages/BuyerSignup";
+import Orders from "./pages/Orders";
+
+
 
 
 function App() {
@@ -41,6 +45,12 @@ function App() {
           element={<MarketInsights />}
         />
       <Route path="/buyers" element={<Buyers />} />
+
+      <Route
+  path="/buyer/signup"
+  element={<BuyerSignup />}
+/>
+   <Route path="/orders" element={<Orders />} />
      
       </Routes>
     </BrowserRouter>
