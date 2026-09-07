@@ -323,6 +323,10 @@ function Dashboard() {
                     if (item.name === "Market Insights") {
                       navigate("/market-insights");
                     }
+
+                    if (item.name === "Forecast") {
+                       navigate("/forecast");
+                      }
                   }}
                 >
                   <span className="sidebar-item-icon">

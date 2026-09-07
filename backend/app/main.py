@@ -4,16 +4,34 @@ from pydantic import BaseModel
 from sqlalchemy import text
 import bcrypt
 from google import genai
+import sys
+import os
+from datetime import date
 
 from app.database import engine
 from app.gemini import client, MODEL_NAME
+
+
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from ml.predict import predict_demand
 
 
 app = FastAPI(
     title="KisanMitra API",
     version="1.0.0",
 )
+print("🔥 LOADED KISANMITRA MAIN.PY")
 
+
+
+
+from ml.predict import predict_demand
 
 # =========================================================
 # CORS
@@ -1945,4 +1963,92 @@ def delete_order(order_sid: int):
         return {
             "success": False,
             "message": "Unable to delete order"
+        }
+ # =========================================================
+# DEMAND FORECAST
+# =========================================================
+
+from datetime import date
+
+
+class ForecastRequest(BaseModel):
+    crop: str
+    location: str
+    modal_price: float
+
+
+@app.post("/api/forecast")
+def forecast_demand(data: ForecastRequest):
+    try:
+
+        # -------------------------------------------------
+        # Get latest previous demand from MySQL
+        # -------------------------------------------------
+
+        with engine.connect() as connection:
+
+            previous_demand = connection.execute(
+                text("""
+                    SELECT demand_kg
+                    FROM demand_history
+                    WHERE crop = :crop
+                    AND location = :location
+                    ORDER BY date DESC
+                    LIMIT 1
+                """),
+                {
+                    "crop": data.crop,
+                    "location": data.location
+                }
+            ).scalar()
+
+        # -------------------------------------------------
+        # If no history exists
+        # -------------------------------------------------
+
+        if previous_demand is None:
+            previous_demand = 0
+
+        # -------------------------------------------------
+        # Current date
+        # -------------------------------------------------
+
+        today = date.today()
+
+        # -------------------------------------------------
+        # Run ML model
+        # -------------------------------------------------
+
+        prediction = predict_demand(
+            crop=data.crop,
+            location=data.location,
+            modal_price=data.modal_price,
+            day=today.day,
+            month=today.month,
+            day_of_week=today.weekday(),
+            previous_demand=float(previous_demand)
+        )
+
+        # -------------------------------------------------
+        # Return result
+        # -------------------------------------------------
+
+        return {
+            "success": True,
+            "crop": data.crop,
+            "location": data.location,
+            "previous_demand_kg": float(previous_demand),
+            "predicted_demand_kg": round(
+                float(prediction),
+                2
+            )
+        }
+
+    except Exception as e:
+
+        print("FORECAST ERROR:", repr(e))
+
+        return {
+            "success": False,
+            "message": "Unable to generate demand forecast"
         }

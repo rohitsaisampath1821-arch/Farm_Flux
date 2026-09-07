@@ -16,7 +16,7 @@ import AdminProducts from "./pages/AdminProducts";
 import Buyers from "./pages/Buyers";
 import BuyerSignup from "./pages/BuyerSignup";
 import Orders from "./pages/Orders";
-
+import Forecast from "./pages/Forecast";
 
 
 
@@ -51,6 +51,9 @@ function App() {
   element={<BuyerSignup />}
 />
    <Route path="/orders" element={<Orders />} />
+
+    <Route path="/forecast" element={<Forecast />} />
+
      
       </Routes>
     </BrowserRouter>
