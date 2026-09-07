@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 import bcrypt
 from google import genai
+from google.genai import types
 
 from app.database import engine
 from app.gemini import client, MODEL_NAME
@@ -1646,20 +1647,32 @@ def kisan_bot_chat(data: KisanBotRequest):
                 "message": "Message cannot be empty"
             }
 
-        interaction = client.interactions.create(
-            model=MODEL_NAME,
-            input=message,
-            tools=[
-                {
-                    "type": "google_search"
-                }
-            ]
-        )
+        bot_rules = """
+        You are KisanBot, an AI assistant for the KisanMitra platform. 
+        Your ONLY purpose is to help farmers and buyers with topics related to:
+        - Agriculture, farming techniques, and crop management
+        - Market prices for vegetables, fruits, herbs, and spices
+        - Agricultural logistics and supply chain
+        - Using the KisanMitra platform
+        
+        CRITICAL RULE: If a user asks a question about ANY topic unrelated to agriculture 
+        (e.g., politics, movies, general programming, sports, etc.), you MUST politely 
+        decline to answer and remind them that you are an agricultural assistant.
+        """
 
-        reply = interaction.output_text
+        chat = client.chats.create(
+            model=MODEL_NAME,
+            config=types.GenerateContentConfig(
+                system_instruction=bot_rules,
+                temperature=0.3,
+            )
+        )
+        response = chat.send_message(message)
+
+        reply = response.text
 
         if not reply or not reply.strip():
-            print("GEMINI EMPTY RESPONSE:", interaction)
+            print("GEMINI EMPTY RESPONSE:", response)
 
             return {
                 "success": False,
