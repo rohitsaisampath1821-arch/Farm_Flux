@@ -316,6 +316,10 @@ function Dashboard() {
                       navigate("/buyers");
                     }
 
+                    if (item.name === "Orders") {
+                      navigate("/orders");
+                    }
+
                     if (item.name === "Market Insights") {
                       navigate("/market-insights");
                     }
