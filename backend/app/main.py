@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 import bcrypt
 from google import genai
+from google.genai import types
 
 from app.database import engine
 from app.gemini import client, MODEL_NAME
@@ -139,143 +140,6 @@ def admin_login(data: LoginRequest):
         return {
             "success": False,
             "message": "Server error while logging in"
-        }
-
-
-# =========================================================
-# BUYER SIGNUP
-# =========================================================
-
-class BuyerSignupRequest(BaseModel):
-    full_name: str
-    business_name: str | None = None
-    email: str
-    phone: str | None = None
-    location: str
-    password: str
-
-
-@app.post("/api/buyers/signup")
-def buyer_signup(data: BuyerSignupRequest):
-    try:
-        name = data.full_name.strip()
-        email = data.email.strip().lower()
-        business_name = data.business_name.strip() if data.business_name else None
-        phone = data.phone.strip() if data.phone else None
-        location = data.location.strip()
-
-        if not name:
-            return {"success": False, "message": "Full name is required"}
-
-        if not email:
-            return {"success": False, "message": "Email is required"}
-
-        if not location:
-            return {"success": False, "message": "Location is required"}
-
-        if len(data.password) < 8:
-            return {"success": False, "message": "Password must contain at least 8 characters"}
-
-        with engine.connect() as connection:
-            existing_buyer = connection.execute(
-                text("""
-                    SELECT sid FROM buyers
-                    WHERE email = :email
-                    LIMIT 1
-                """),
-                {"email": email}
-            ).scalar()
-
-        if existing_buyer:
-            return {
-                "success": False,
-                "message": "An account with this email already exists"
-            }
-
-        password_hash = bcrypt.hashpw(
-            data.password.encode("utf-8"),
-            bcrypt.gensalt()
-        ).decode("utf-8")
-
-        with engine.begin() as connection:
-            result = connection.execute(
-                text("""
-                    INSERT INTO buyers
-                    (
-                        name,
-                        email,
-                        password_hash,
-                        phone,
-                        business_name,
-                        location,
-                        status
-                    )
-                    VALUES
-                    (
-                        :name,
-                        :email,
-                        :password_hash,
-                        :phone,
-                        :business_name,
-                        :location,
-                        'active'
-                    )
-                """),
-                {
-                    "name": name,
-                    "email": email,
-                    "password_hash": password_hash,
-                    "phone": phone,
-                    "business_name": business_name,
-                    "location": location
-                }
-            )
-
-            buyer_sid = result.lastrowid
-
-            connection.execute(
-                text("""
-                    INSERT INTO user_activity
-                    (
-                        user_type,
-                        user_sid,
-                        activity_type,
-                        reference_sid,
-                        metadata
-                    )
-                    VALUES
-                    (
-                        'buyer',
-                        :buyer_sid,
-                        'signup',
-                        NULL,
-                        :metadata
-                    )
-                """),
-                {
-                    "buyer_sid": buyer_sid,
-                    "metadata": '{"source":"buyer_signup"}'
-                }
-            )
-
-        return {
-            "success": True,
-            "message": "Buyer account created successfully",
-            "buyer": {
-                "sid": buyer_sid,
-                "name": name,
-                "email": email,
-                "phone": phone,
-                "business_name": business_name,
-                "location": location
-            }
-        }
-
-    except Exception as e:
-        print("BUYER SIGNUP ERROR:", repr(e))
-        return {
-            "success": False,
-            "message": "Unable to create buyer account"
         }
 
 
@@ -789,7 +653,7 @@ def get_farmers():
 
 
 # =========================================================
-# DELETE FARMER LIST
+# DELETE FARMER
 # =========================================================
 
 @app.delete("/api/farmers/{farmer_sid}")
@@ -1783,20 +1647,32 @@ def kisan_bot_chat(data: KisanBotRequest):
                 "message": "Message cannot be empty"
             }
 
-        interaction = client.interactions.create(
-            model=MODEL_NAME,
-            input=message,
-            tools=[
-                {
-                    "type": "google_search"
-                }
-            ]
-        )
+        bot_rules = """
+        You are KisanBot, an AI assistant for the KisanMitra platform. 
+        Your ONLY purpose is to help farmers and buyers with topics related to:
+        - Agriculture, farming techniques, and crop management
+        - Market prices for vegetables, fruits, herbs, and spices
+        - Agricultural logistics and supply chain
+        - Using the KisanMitra platform
+        
+        CRITICAL RULE: If a user asks a question about ANY topic unrelated to agriculture 
+        (e.g., politics, movies, general programming, sports, etc.), you MUST politely 
+        decline to answer and remind them that you are an agricultural assistant.
+        """
 
-        reply = interaction.output_text
+        chat = client.chats.create(
+            model=MODEL_NAME,
+            config=types.GenerateContentConfig(
+                system_instruction=bot_rules,
+                temperature=0.3,
+            )
+        )
+        response = chat.send_message(message)
+
+        reply = response.text
 
         if not reply or not reply.strip():
-            print("GEMINI EMPTY RESPONSE:", interaction)
+            print("GEMINI EMPTY RESPONSE:", response)
 
             return {
                 "success": False,
@@ -1816,133 +1692,4 @@ def kisan_bot_chat(data: KisanBotRequest):
         return {
             "success": False,
             "message": "Unable to connect to KisanMitra Bot"
-        }
-    # =========================================================
-# GET ALL ORDERS - ADMIN
-# =========================================================
-
-@app.get("/api/admin/orders")
-def get_admin_orders():
-    try:
-        with engine.connect() as connection:
-            result = connection.execute(
-                text("""
-                    SELECT
-                        o.sid,
-                        o.buyer_sid,
-                        b.name AS buyer_name,
-                        b.business_name,
-                        o.total_amount,
-                        o.status,
-                        o.delivery_address,
-                        o.order_date,
-
-                        COUNT(oi.sid) AS item_count,
-
-                        COALESCE(
-                            SUM(oi.quantity),
-                            0
-                        ) AS total_quantity
-
-                    FROM orders o
-
-                    LEFT JOIN buyers b
-                        ON b.sid = o.buyer_sid
-
-                    LEFT JOIN order_items oi
-                        ON oi.order_sid = o.sid
-
-                    GROUP BY
-                        o.sid,
-                        o.buyer_sid,
-                        b.name,
-                        b.business_name,
-                        o.total_amount,
-                        o.status,
-                        o.delivery_address,
-                        o.order_date
-
-                    ORDER BY o.order_date DESC
-                """)
-            )
-
-            orders = [
-                dict(row)
-                for row in result.mappings().all()
-            ]
-
-        return {
-            "success": True,
-            "orders": orders
-        }
-
-    except Exception as e:
-        print("ADMIN ORDERS FETCH ERROR:", repr(e))
-
-        return {
-            "success": False,
-            "message": "Unable to fetch orders",
-            "orders": []
-        }
-    # =========================================================
-# DELETE ORDER IN ORDERS
-# =========================================================
-
-@app.delete("/api/orders/{order_sid}")
-def delete_order(order_sid: int):
-    try:
-        with engine.begin() as connection:
-
-            # Check whether order exists
-            order = connection.execute(
-                text("""
-                    SELECT sid
-                    FROM orders
-                    WHERE sid = :order_sid
-                    LIMIT 1
-                """),
-                {
-                    "order_sid": order_sid
-                }
-            ).scalar()
-
-            if order is None:
-                return {
-                    "success": False,
-                    "message": "Order not found"
-                }
-
-            # Delete order items first
-            connection.execute(
-                text("""
-                    DELETE FROM order_items
-                    WHERE order_sid = :order_sid
-                """),
-                {
-                    "order_sid": order_sid
-                }
-            )
-
-            # Delete the order
-            connection.execute(
-                text("""
-                    DELETE FROM orders
-                    WHERE sid = :order_sid
-                """),
-                {
-                    "order_sid": order_sid
-                }
-            )
-
-        return {
-            "success": True,
-            "message": "Order deleted successfully"
-        }
-
-    except Exception as e:
-        print("ORDER DELETE ERROR:", repr(e))
-
-        return {
-            "success": False,
-            "message": "Unable to delete order"
         }
