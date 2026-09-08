@@ -324,3 +324,34 @@ CREATE TABLE user_activity (
     metadata JSON NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE mandi_prices (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    price_date DATE NOT NULL,
+
+    state VARCHAR(100) NOT NULL,
+    district VARCHAR(100),
+    market VARCHAR(150) NOT NULL,
+
+    commodity VARCHAR(100) NOT NULL,
+    variety VARCHAR(150),
+    grade VARCHAR(100),
+
+    min_price DECIMAL(10,2),
+    max_price DECIMAL(10,2),
+    modal_price DECIMAL(10,2) NOT NULL,
+
+    arrival_quantity DECIMAL(12,2),
+
+    unit VARCHAR(30) DEFAULT 'Quintal',
+
+    source VARCHAR(100) DEFAULT 'AGMARKNET',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_price_date (price_date),
+    INDEX idx_crop_location (commodity, market),
+    INDEX idx_state_district (state, district),
+    INDEX idx_commodity_date (commodity, price_date)
+);

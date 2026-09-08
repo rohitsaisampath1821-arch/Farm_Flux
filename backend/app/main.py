@@ -7,9 +7,25 @@ from google import genai
 import sys
 import os
 from datetime import date
+from google.genai import types
+
 
 from app.database import engine
 from app.gemini import client, MODEL_NAME
+
+import sys
+import os
+
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from ml.predict import predict_demand
+
+
 
 
 PROJECT_ROOT = os.path.abspath(
@@ -1789,7 +1805,6 @@ def get_complaints():
 class KisanBotRequest(BaseModel):
     message: str
 
-
 @app.post("/api/kisan-bot/chat")
 def kisan_bot_chat(data: KisanBotRequest):
     try:
@@ -1801,21 +1816,36 @@ def kisan_bot_chat(data: KisanBotRequest):
                 "message": "Message cannot be empty"
             }
 
-        interaction = client.interactions.create(
+        bot_rules = """
+You are KisanBot, an AI assistant for the KisanMitra platform.
+
+Your ONLY purpose is to help farmers and buyers with topics related to:
+- Agriculture, farming techniques, and crop management
+- Market prices for vegetables, fruits, herbs, and spices
+- Agricultural logistics and supply chain
+- Using the KisanMitra platform
+
+CRITICAL RULE:
+If a user asks a question about ANY topic unrelated to agriculture, such as politics,
+movies, general programming, sports, entertainment, or unrelated personal questions,
+you MUST politely decline to answer and remind them that you are an agricultural assistant.
+
+Keep answers practical, simple, and useful for farmers.
+"""
+
+        chat = client.chats.create(
             model=MODEL_NAME,
-            input=message,
-            tools=[
-                {
-                    "type": "google_search"
-                }
-            ]
+            config=types.GenerateContentConfig(
+                system_instruction=bot_rules,
+                temperature=0.3
+            )
         )
 
-        reply = interaction.output_text
+        response = chat.send_message(message)
+        reply = response.text
 
         if not reply or not reply.strip():
-            print("GEMINI EMPTY RESPONSE:", interaction)
-
+            print("GEMINI EMPTY RESPONSE:", response)
             return {
                 "success": False,
                 "message": "Gemini returned an empty response"
@@ -1827,14 +1857,14 @@ def kisan_bot_chat(data: KisanBotRequest):
         }
 
     except Exception as e:
-        print("========================================")
-        print("GEMINI ERROR:", repr(e))
-        print("========================================")
-
+        print("KISAN BOT ERROR:", str(e))
         return {
             "success": False,
-            "message": "Unable to connect to KisanMitra Bot"
+            "message": "Unable to process your request",
+            "error": str(e)
         }
+
+
     # =========================================================
 # GET ALL ORDERS - ADMIN
 # =========================================================
@@ -2052,3 +2082,7 @@ def forecast_demand(data: ForecastRequest):
             "success": False,
             "message": "Unable to generate demand forecast"
         }
+
+
+
+ 
