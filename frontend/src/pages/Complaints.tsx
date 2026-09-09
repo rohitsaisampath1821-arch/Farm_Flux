@@ -16,6 +16,19 @@ type Buyer = {
   email: string;
 };
 
+type Complaint = {
+  sid: number;
+  user_type: "buyer" | "farmer";
+  user_sid: number;
+  category: string;
+  subject: string;
+  description: string;
+  status: "submitted" | "under_review" | "resolved" | "rejected";
+  admin_response: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 function Complaints() {
   const navigate = useNavigate();
 
@@ -42,6 +55,8 @@ function Complaints() {
     null
   );
   const [error, setError] = useState("");
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [loadingComplaints, setLoadingComplaints] = useState(true);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -99,6 +114,38 @@ function Complaints() {
     };
   }, []);
 
+
+  useEffect(() => {
+    fetchMyComplaints();
+  }, [buyer?.sid]);
+
+  async function fetchMyComplaints() {
+    if (!buyer?.sid) {
+      setLoadingComplaints(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/complaints/buyer/${buyer.sid}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to fetch complaints"
+        );
+      }
+
+      setComplaints(data.complaints || []);
+    } catch (err) {
+      console.error("FETCH MY COMPLAINTS ERROR:", err);
+    } finally {
+      setLoadingComplaints(false);
+    }
+  }
+
   async function submitComplaint() {
     setError("");
 
@@ -141,6 +188,7 @@ function Complaints() {
       }
 
       setComplaintId(data.complaint?.sid || data.sid || null);
+      await fetchMyComplaints();
       setSubmitted(true);
     } catch (err) {
       console.error("COMPLAINT ERROR:", err);
@@ -399,6 +447,131 @@ function Complaints() {
             </div>
           </section>
         )}
+
+        {/* MY COMPLAINTS */}
+
+        <section className="mt-8">
+          <div className="mb-5">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#39ff14]/60">
+              Complaint History
+            </p>
+
+            <h2 className="mt-1 text-2xl font-semibold text-white">
+              My Complaints
+            </h2>
+
+            <p className="mt-1 text-sm text-white/35">
+              Track your submitted complaints and support responses.
+            </p>
+          </div>
+
+          {loadingComplaints ? (
+            <div className="rounded-2xl border border-white/[0.08] bg-[#090c09] p-8 text-center">
+              <p className="text-sm text-white/35">
+                Loading your complaints...
+              </p>
+            </div>
+          ) : complaints.length === 0 ? (
+            <div className="rounded-2xl border border-white/[0.08] bg-[#090c09] p-8 text-center">
+              <CircleHelp
+                size={32}
+                className="mx-auto mb-3 text-white/15"
+              />
+
+              <p className="text-sm text-white/40">
+                You haven't submitted any complaints yet.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {complaints.map((complaint) => (
+                <div
+                  key={complaint.sid}
+                  className="rounded-2xl border border-white/[0.08] bg-[#090c09] p-6 shadow-[8px_8px_25px_rgba(0,0,0,.35)]"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span className="rounded-lg bg-[#7f9f5c]/10 px-3 py-1 text-xs font-semibold text-[#91ad68]">
+                          KM-{complaint.sid}
+                        </span>
+
+                        <span
+                          className={`rounded-lg border px-3 py-1 text-xs font-medium ${
+                            complaint.status === "resolved"
+                              ? "border-green-500/20 bg-green-500/10 text-green-300"
+                              : complaint.status === "under_review"
+                              ? "border-yellow-500/20 bg-yellow-500/10 text-yellow-300"
+                              : complaint.status === "rejected"
+                              ? "border-red-500/20 bg-red-500/10 text-red-300"
+                              : "border-blue-500/20 bg-blue-500/10 text-blue-300"
+                          }`}
+                        >
+                          {complaint.status
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() +
+                                word.slice(1)
+                            )
+                            .join(" ")}
+                        </span>
+                      </div>
+
+                      <h3 className="text-lg font-semibold text-white/80">
+                        {complaint.subject}
+                      </h3>
+
+                      <p className="mt-1 text-xs text-white/30">
+                        {complaint.category}
+                      </p>
+                    </div>
+
+                    <p className="text-xs text-white/25">
+                      {complaint.created_at
+                        ? new Date(
+                            complaint.created_at
+                          ).toLocaleString("en-IN", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          })
+                        : ""}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 rounded-xl border border-white/[0.05] bg-[#0c100c] p-4">
+                    <p className="mb-2 text-[10px] uppercase tracking-[0.15em] text-white/25">
+                      Your Complaint
+                    </p>
+
+                    <p className="text-sm leading-6 text-white/50">
+                      {complaint.description}
+                    </p>
+                  </div>
+
+                  {complaint.admin_response ? (
+                    <div className="mt-4 rounded-xl border border-[#7f9f5c]/10 bg-[#101510] p-4">
+                      <p className="mb-2 text-[10px] uppercase tracking-[0.15em] text-[#91ad68]/60">
+                        Support Response
+                      </p>
+
+                      <p className="text-sm leading-6 text-white/55">
+                        {complaint.admin_response}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-4 rounded-xl border border-white/[0.05] bg-[#0c100c] px-4 py-3">
+                      <p className="text-xs text-white/25">
+                        No response from support yet.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
       </main>
     </div>
   );

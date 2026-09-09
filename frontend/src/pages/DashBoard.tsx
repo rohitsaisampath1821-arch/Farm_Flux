@@ -324,6 +324,10 @@ function Dashboard() {
                       navigate("/market-insights");
                     }
 
+                    if (item.name === "Mandi Prices") {
+                      navigate("/mandi-prices");
+                    }
+
                     if (item.name === "Forecast") {
                        navigate("/forecast");
                       }
@@ -354,7 +358,10 @@ function Dashboard() {
             Settings
           </button>
 
-          <button className="sidebar-item">
+          <button
+            className="sidebar-item"
+            onClick={() => navigate("/receive-complaints")}
+          >
             <span className="sidebar-item-icon">
               <CircleHelp size={18} />
             </span>

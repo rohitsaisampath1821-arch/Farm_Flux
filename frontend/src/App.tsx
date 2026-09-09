@@ -17,7 +17,8 @@ import Buyers from "./pages/Buyers";
 import BuyerSignup from "./pages/BuyerSignup";
 import Orders from "./pages/Orders";
 import Forecast from "./pages/Forecast";
-
+import MandiPrices from "./pages/MandiPrices";
+import ReceiveComplaints from "./pages/ReceiveComplaints";
 
 
 function App() {
@@ -53,6 +54,15 @@ function App() {
    <Route path="/orders" element={<Orders />} />
 
     <Route path="/forecast" element={<Forecast />} />
+
+    <Route
+  path="/mandi-prices"
+  element={<MandiPrices />}
+/>
+  <Route
+  path="/receive-complaints"
+  element={<ReceiveComplaints />}
+/>
 
      
       </Routes>

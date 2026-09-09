@@ -8,6 +8,9 @@ import sys
 import os
 from datetime import date
 from google.genai import types
+from sqlalchemy import text
+from pydantic import BaseModel
+from sqlalchemy import text
 
 
 from app.database import engine
@@ -2083,6 +2086,257 @@ def forecast_demand(data: ForecastRequest):
             "message": "Unable to generate demand forecast"
         }
 
+@app.get("/api/mandi-prices")
+def get_mandi_prices():
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("""
+                    SELECT
+                        id,
+                        price_date,
+                        state,
+                        district,
+                        market,
+                        commodity,
+                        variety,
+                        grade,
+                        min_price,
+                        max_price,
+                        modal_price,
+                        arrival_quantity,
+                        unit,
+                        source
+                    FROM mandi_prices
+                    ORDER BY price_date DESC
+                    LIMIT 100
+                """)
+            )
+
+            prices = []
+
+            for row in result:
+                prices.append({
+                    "id": row.id,
+                    "price_date": str(row.price_date),
+                    "state": row.state,
+                    "district": row.district,
+                    "market": row.market,
+                    "commodity": row.commodity,
+                    "variety": row.variety,
+                    "grade": row.grade,
+                    "min_price": float(row.min_price)
+                    if row.min_price is not None else None,
+                    "max_price": float(row.max_price)
+                    if row.max_price is not None else None,
+                    "modal_price": float(row.modal_price),
+                    "arrival_quantity": float(row.arrival_quantity)
+                    if row.arrival_quantity is not None else None,
+                    "unit": row.unit,
+                    "source": row.source
+                })
+
+        return {
+            "success": True,
+            "count": len(prices),
+            "prices": prices
+        }
+
+    except Exception as e:
+        print("MANDI PRICE ERROR:", repr(e))
+
+        return {
+            "success": False,
+            "message": "Unable to fetch mandi prices"
+        }
+class ComplaintCreate(BaseModel):
+    user_type: str
+    user_sid: int
+    category: str
+    subject: str
+    description: str
 
 
- 
+class ComplaintUpdate(BaseModel):
+    status: str
+    admin_response: str | None = None
+
+
+@app.post("/api/complaints")
+def create_complaint(data: ComplaintCreate):
+    try:
+        if data.user_type not in ["farmer", "buyer"]:
+            return {
+                "success": False,
+                "message": "Invalid user type"
+            }
+
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    INSERT INTO complaints
+                    (
+                        user_type,
+                        user_sid,
+                        category,
+                        subject,
+                        description,
+                        status
+                    )
+                    VALUES
+                    (
+                        :user_type,
+                        :user_sid,
+                        :category,
+                        :subject,
+                        :description,
+                        'submitted'
+                    )
+                """),
+                {
+                    "user_type": data.user_type,
+                    "user_sid": data.user_sid,
+                    "category": data.category,
+                    "subject": data.subject,
+                    "description": data.description
+                }
+            )
+
+            complaint_id = result.lastrowid
+
+        return {
+            "success": True,
+            "message": "Complaint submitted successfully",
+            "complaint": {
+                "sid": complaint_id
+            }
+        }
+
+    except Exception as e:
+        print("CREATE COMPLAINT ERROR:", repr(e))
+
+        return {
+            "success": False,
+            "message": "Unable to submit complaint"
+        }
+
+    # =========================================================
+# GET BUYER COMPLAINTS
+# =========================================================
+
+@app.get("/api/complaints/buyer/{user_sid}")
+def get_buyer_complaints(user_sid: int):
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("""
+                    SELECT
+                        sid,
+                        user_type,
+                        user_sid,
+                        category,
+                        subject,
+                        description,
+                        status,
+                        admin_response,
+                        created_at,
+                        updated_at
+                    FROM complaints
+                    WHERE user_sid = :user_sid
+                    AND user_type = 'buyer'
+                    ORDER BY created_at DESC
+                """),
+                {
+                    "user_sid": user_sid
+                }
+            )
+
+            complaints = []
+
+            for row in result:
+                complaints.append({
+                    "sid": row.sid,
+                    "user_type": row.user_type,
+                    "user_sid": row.user_sid,
+                    "category": row.category,
+                    "subject": row.subject,
+                    "description": row.description,
+                    "status": row.status,
+                    "admin_response": row.admin_response,
+                    "created_at": str(row.created_at)
+                    if row.created_at else None,
+                    "updated_at": str(row.updated_at)
+                    if row.updated_at else None
+                })
+
+        return {
+            "success": True,
+            "count": len(complaints),
+            "complaints": complaints
+        }
+
+    except Exception as e:
+        print("GET BUYER COMPLAINTS ERROR:", repr(e))
+
+        return {
+            "success": False,
+            "message": "Unable to fetch buyer complaints",
+            "complaints": []
+        }
+
+    # =========================================================
+# ADMIN UPDATE COMPLAINT
+# =========================================================
+
+@app.put("/api/complaints/{complaint_sid}")
+def update_complaint(complaint_sid: int, data: ComplaintUpdate):
+    try:
+        if data.status not in [
+            "submitted",
+            "under_review",
+            "resolved",
+            "rejected"
+        ]:
+            return {
+                "success": False,
+                "message": "Invalid complaint status"
+            }
+
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    UPDATE complaints
+                    SET
+                        status = :status,
+                        admin_response = :admin_response,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE sid = :sid
+                """),
+                {
+                    "status": data.status,
+                    "admin_response": data.admin_response,
+                    "sid": complaint_sid
+                }
+            )
+
+        if result.rowcount == 0:
+            return {
+                "success": False,
+                "message": "Complaint not found"
+            }
+
+        return {
+            "success": True,
+            "message": "Complaint updated successfully"
+        }
+
+    except Exception as e:
+        print("UPDATE COMPLAINT ERROR:", repr(e))
+
+        return {
+            "success": False,
+            "message": "Unable to update complaint"
+        }
+
+   
+    
