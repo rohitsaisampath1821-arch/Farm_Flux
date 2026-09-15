@@ -15,8 +15,49 @@ import {
   UserRound,
   TrendingUp,
   Navigation,
+  MapPin,
+  Radio,
 } from "lucide-react";
 import gsap from "gsap";
+import L from "leaflet";
+import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+
+const networkNodes = [
+  { name: "Delhi", position: [28.6139, 77.209] as [number, number], status: "Hub" },
+  { name: "Ahmedabad", position: [23.0225, 72.5714] as [number, number], status: "Active" },
+  { name: "Mumbai", position: [19.076, 72.8777] as [number, number], status: "Hub" },
+  { name: "Hyderabad", position: [17.385, 78.4867] as [number, number], status: "Active" },
+  { name: "Visakhapatnam", position: [17.6868, 83.2185] as [number, number], status: "Active" },
+  { name: "Bengaluru", position: [12.9716, 77.5946] as [number, number], status: "Hub" },
+  { name: "Chennai", position: [13.0827, 80.2707] as [number, number], status: "Active" },
+  { name: "Kolkata", position: [22.5726, 88.3639] as [number, number], status: "Active" },
+];
+
+const networkConnections = [
+  ["Delhi", "Ahmedabad"], ["Delhi", "Mumbai"], ["Delhi", "Kolkata"],
+  ["Mumbai", "Ahmedabad"], ["Mumbai", "Hyderabad"], ["Mumbai", "Bengaluru"],
+  ["Ahmedabad", "Hyderabad"], ["Hyderabad", "Visakhapatnam"],
+  ["Hyderabad", "Bengaluru"], ["Visakhapatnam", "Kolkata"],
+  ["Visakhapatnam", "Chennai"], ["Bengaluru", "Chennai"],
+].map(([from, to]) => ({
+  from: networkNodes.find((n) => n.name === from)!.position,
+  to: networkNodes.find((n) => n.name === to)!.position,
+}));
+
+function LocateUser() {
+  const map = useMap();
+  return (
+    <button
+      type="button"
+      onClick={() => map.locate({ setView: true, maxZoom: 10 })}
+      className="absolute right-4 top-4 z-[1000] flex items-center gap-2 rounded-xl border border-[#7f9f5c]/30 bg-[#050705]/90 px-3 py-2 text-xs font-medium text-[#b9d69b] shadow-lg backdrop-blur-md transition hover:border-[#7f9f5c]/60 hover:bg-[#0b120b]"
+    >
+      <MapPin size={14} />
+      Locate me
+    </button>
+  );
+}
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -67,6 +108,9 @@ function Dashboard() {
         { name: "Market Insights", icon: <TrendingUp size={18} /> },
         { name: "Forecast", icon: <BarChart3 size={18} /> },
         { name: "Mandi Prices", icon: <Map size={18} /> },
+
+        // NEW — same sidebar styling
+        { name: "Profit Impact", icon: <TrendingUp size={18} /> },
       ],
     },
   ];
@@ -118,7 +162,7 @@ function Dashboard() {
         ease: "power3.out",
       });
 
-      gsap.from(".map-info-card", {
+      gsap.from(".network-panel", {
         y: 15,
         opacity: 0,
         duration: 0.7,
@@ -127,7 +171,7 @@ function Dashboard() {
         ease: "power2.out",
       });
 
-      gsap.from(".map-legend", {
+      gsap.from(".network-legend", {
         y: 15,
         opacity: 0,
         duration: 0.7,
@@ -135,7 +179,7 @@ function Dashboard() {
         ease: "power2.out",
       });
 
-      gsap.to(".map-marker", {
+      gsap.to(".network-node", {
         scale: 1.08,
         opacity: 0.78,
         duration: 1.8,
@@ -147,7 +191,7 @@ function Dashboard() {
     }, pageRef);
 
     const cards = gsap.utils.toArray<HTMLElement>(
-      ".map-info-card, .market-action"
+      ".network-panel, .market-action"
     );
 
     cards.forEach((card) => {
@@ -214,7 +258,8 @@ function Dashboard() {
   useEffect(() => {
     if (!particlesRef.current) return;
 
-    const particles = gsap.utils.toArray<HTMLElement>(".dashboard-particle");
+    const particles =
+      gsap.utils.toArray<HTMLElement>(".dashboard-particle");
 
     particles.forEach((particle) => {
       gsap.set(particle, {
@@ -245,6 +290,7 @@ function Dashboard() {
 
   return (
     <div ref={pageRef} className="dashboard relative overflow-hidden">
+
       {/* ================= BACKGROUND PARTICLES ================= */}
 
       <div
@@ -268,6 +314,7 @@ function Dashboard() {
       ===================================================== */}
 
       <aside className="dashboard-sidebar relative z-10">
+
         {/* ================= LOGO ================= */}
 
         <div className="dashboard-logo">
@@ -279,7 +326,6 @@ function Dashboard() {
             <h2>
               Kisan<span>Mitra</span>
             </h2>
-
             <p>SMART FARMING</p>
           </div>
         </div>
@@ -329,8 +375,13 @@ function Dashboard() {
                     }
 
                     if (item.name === "Forecast") {
-                       navigate("/forecast");
-                      }
+                      navigate("/forecast");
+                    }
+
+                    // NEW
+                    if (item.name === "Profit Impact") {
+                      navigate("/profit-impact");
+                    }
                   }}
                 >
                   <span className="sidebar-item-icon">
@@ -368,194 +419,77 @@ function Dashboard() {
             Help & Support
           </button>
 
-          {/* ================= ADMIN ================= */}
-
           <div className="admin-profile">
-            <div className="admin-avatar">
-              <UserRound size={18} />
-            </div>
-
+            <div className="admin-avatar"><UserRound size={18} /></div>
             <div className="admin-info">
               <p>{admin?.name || "Administrator"}</p>
               <span>Administrator</span>
             </div>
-
-            <ChevronDown
-              size={16}
-              className="admin-chevron"
-            />
+            <ChevronDown size={16} className="admin-chevron" />
           </div>
         </div>
       </aside>
 
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
       <main className="dashboard-main relative z-10">
-        {/* =====================================================
-            MARKET INTELLIGENCE
-        ===================================================== */}
-
         <section className="market-section">
-          {/* ================= SECTION HEADING ================= */}
-
           <div className="section-heading">
             <div>
-              <p>LIVE MARKET DATA</p>
-
-              <h2>Market Intelligence</h2>
+              <p>KISANMITRA NETWORK</p>
+              <h2>India Supply Network</h2>
             </div>
-
-            <div className="live-status">
-              <span />
-              Live
-            </div>
+            <div className="live-status"><span />Network Live</div>
           </div>
 
-          {/* ===================================================
-              MAP
-          =================================================== */}
+          <div className="market-map overflow-hidden">
+            <MapContainer center={[20.5937, 78.9629]} zoom={5} minZoom={4} maxZoom={10} scrollWheelZoom zoomControl className="h-full w-full">
+              <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <LocateUser />
 
-          <div className="market-map">
-            <div className="map-glow" />
+              {networkConnections.map((connection, index) => (
+                <Polyline key={index} positions={[connection.from, connection.to]} pathOptions={{ color: "#5f9146", weight: 2, opacity: 0.65, dashArray: "6 10" }} />
+              ))}
 
-            <div className="map-grid" />
+              {networkNodes.map((node) => (
+                <CircleMarker key={node.name} center={node.position} radius={8} pathOptions={{ color: "#b9d69b", fillColor: "#39ff14", fillOpacity: 0.95, weight: 2 }} className="network-node">
+                  <Tooltip direction="top" offset={[0, -8]} opacity={0.95}>
+                    <strong>{node.name}</strong><br />KisanMitra {node.status}
+                  </Tooltip>
+                </CircleMarker>
+              ))}
 
-            {/* ================= FAKE MAP ROADS ================= */}
+              <Marker position={[20.5937, 78.9629]} icon={L.divIcon({ className: "india-center-marker", html: '<div style="width:18px;height:18px;border-radius:50%;border:2px solid #39ff14;background:#071007;box-shadow:0 0 18px #39ff14,0 0 35px rgba(57,255,20,.55);display:flex;align-items:center;justify-content:center;color:#39ff14;font-size:9px;font-weight:700;">KM</div>', iconSize: [18, 18], iconAnchor: [9, 9] })}>
+                <Tooltip direction="top" offset={[0, -8]}>KisanMitra Network Core</Tooltip>
+              </Marker>
+            </MapContainer>
 
-            <div className="road road-one" />
-            <div className="road road-two" />
-            <div className="road road-three" />
-            <div className="road road-four" />
-
-            {/* ================= MAP MARKERS ================= */}
-
-            <div className="map-marker supply marker-one">
-              <span>₹</span>
-            </div>
-
-            <div className="map-marker demand marker-two">
-              <span>!</span>
-            </div>
-
-            <div className="map-marker price marker-three">
-              <span>₹</span>
-            </div>
-
-            <div className="map-marker supply marker-four">
-              <span>₹</span>
-            </div>
-
-            {/* ================= MARKER CARD 1 ================= */}
-
-            <div className="map-info-card card-one">
-              <div className="info-dot supply-dot" />
-
-              <div>
-                <b>Tomato Supply</b>
-
-                <span>2.4 tonnes</span>
+            <div className="network-panel absolute left-5 top-5 z-[999] rounded-2xl border border-[#7f9f5c]/20 bg-[#050705]/90 p-4 shadow-xl backdrop-blur-md">
+              <p className="mb-3 text-[10px] font-semibold tracking-[0.2em] text-[#7f9f5c]">NETWORK STATUS</p>
+              <div className="space-y-2 text-xs text-white/65">
+                <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#39ff14] shadow-[0_0_8px_#39ff14]" />Active hubs</div>
+                <div className="flex items-center gap-2"><span className="h-[2px] w-3 bg-[#7f9f5c]" />Supply connections</div>
+                <div className="flex items-center gap-2"><Radio size={12} className="text-[#39ff14]" />GPS-enabled view</div>
               </div>
             </div>
 
-            {/* ================= MARKER CARD 2 ================= */}
-
-            <div className="map-info-card card-two">
-              <div className="info-dot demand-dot" />
-
-              <div>
-                <b>High Demand</b>
-
-                <span>Bengaluru</span>
-              </div>
-            </div>
-
-            {/* ================= MARKER CARD 3 ================= */}
-
-            <div className="map-info-card card-three">
-              <div className="info-dot price-dot" />
-
-              <div>
-                <b>Mandi Price</b>
-
-                <span>₹2,850 / qtl</span>
-              </div>
-            </div>
-
-            {/* ================= LEGEND ================= */}
-
-            <div className="map-legend">
-              <p>MARKET SIGNALS</p>
-
-              <div>
-                <span className="legend-dot supply-dot" />
-                Supply
-              </div>
-
-              <div>
-                <span className="legend-dot demand-dot" />
-                High Demand
-              </div>
-
-              <div>
-                <span className="legend-dot price-dot" />
-                Mandi Price
-              </div>
+            <div className="network-legend absolute bottom-5 right-5 z-[999] rounded-2xl border border-[#7f9f5c]/20 bg-[#050705]/90 px-4 py-3 text-xs text-white/70 shadow-xl backdrop-blur-md">
+              <span className="font-semibold text-[#b9d69b]">8 connected hubs</span> · India network view
             </div>
           </div>
-
-          {/* ===================================================
-              ACTIONS
-          ===================================================== */}
 
           <div className="market-actions">
-            {/* ================= FIND BUYERS ================= */}
-
             <button className="market-action primary">
-              <span>
-                <ShoppingCart size={19} />
-              </span>
-
-              <div>
-                <b>Find Buyers</b>
-
-                <small>Discover nearby demand</small>
-              </div>
-
+              <span><ShoppingCart size={19} /></span>
+              <div><b>Find Buyers</b><small>Discover nearby demand</small></div>
               <Navigation size={17} />
             </button>
-
-            {/* ================= OPTIMIZE ROUTE ================= */}
-
             <button className="market-action">
-              <span>
-                <Truck size={19} />
-              </span>
-
-              <div>
-                <b>Optimize Route</b>
-
-                <small>Find the best delivery path</small>
-              </div>
-
+              <span><Truck size={19} /></span>
+              <div><b>Optimize Route</b><small>Find the best delivery path</small></div>
               <Navigation size={17} />
             </button>
-
-            <button
-              className="market-action"
-              onClick={() => navigate("/market-insights")}
-            >
-              <span>
-                <TrendingUp size={19} />
-              </span>
-
-              <div>
-                <b>Market Insights</b>
-
-                <small>View market prices and demand</small>
-              </div>
-
+            <button className="market-action" onClick={() => navigate("/market-insights")}>
+              <span><TrendingUp size={19} /></span>
+              <div><b>Market Insights</b><small>View market prices and demand</small></div>
               <Navigation size={17} />
             </button>
           </div>

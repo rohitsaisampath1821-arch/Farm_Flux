@@ -355,3 +355,21 @@ CREATE TABLE mandi_prices (
     INDEX idx_state_district (state, district),
     INDEX idx_commodity_date (commodity, price_date)
 );
+
+ml 
+
+CREATE TABLE profit_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    crop VARCHAR(100) NOT NULL,
+    location VARCHAR(100) NOT NULL,
+    month VARCHAR(20) NOT NULL,
+    quantity_kg DECIMAL(10,2) NOT NULL,
+    traditional_price DECIMAL(10,2) NOT NULL,
+    direct_price DECIMAL(10,2) NOT NULL,
+    transport_cost DECIMAL(10,2) NOT NULL,
+    traditional_income DECIMAL(12,2) NOT NULL,
+    direct_income DECIMAL(12,2) NOT NULL,
+    benefit DECIMAL(12,2) NOT NULL,
+    benefit_percentage DECIMAL(8,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

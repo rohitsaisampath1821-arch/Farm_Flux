@@ -11,7 +11,10 @@ from google.genai import types
 from sqlalchemy import text
 from pydantic import BaseModel
 from sqlalchemy import text
-
+from pydantic import BaseModel
+from fastapi import FastAPI
+from sqlalchemy import text
+from sqlalchemy import text
 
 from app.database import engine
 from app.gemini import client, MODEL_NAME
@@ -2338,5 +2341,64 @@ def update_complaint(complaint_sid: int, data: ComplaintUpdate):
             "message": "Unable to update complaint"
         }
 
-   
-    
+
+class ProfitRequest(BaseModel):
+    quantity: float
+    traditional_price: float
+    direct_price: float
+    transport_cost: float
+
+@app.get("/api/profit/history")
+def get_profit_history():
+    query = text("""
+        SELECT
+            DATE_FORMAT(o.order_date, '%Y-%m') AS month,
+            SUM(oi.quantity) AS quantity,
+            SUM(oi.subtotal) AS direct_income,
+            SUM(
+                oi.quantity * COALESCE(
+                    (
+                        SELECT m.modal_price
+                        FROM mandi_prices m
+                        WHERE LOWER(m.commodity) = LOWER(p.product_name)
+                           OR LOWER(m.commodity) = LOWER(p.category)
+                        ORDER BY ABS(DATEDIFF(m.price_date, DATE(o.order_date)))
+                        LIMIT 1
+                    ),
+                    oi.price_per_unit
+                )
+            ) AS traditional_income
+        FROM orders o
+        JOIN order_items oi ON oi.order_sid = o.sid
+        JOIN products p ON p.sid = oi.product_sid
+        WHERE o.status = 'delivered'
+        GROUP BY DATE_FORMAT(o.order_date, '%Y-%m')
+        ORDER BY month;
+    """)
+
+    with engine.connect() as conn:
+        rows = conn.execute(query).mappings().all()
+
+    history = []
+
+    for row in rows:
+        quantity = float(row["quantity"] or 0)
+        direct_income = float(row["direct_income"] or 0)
+        traditional_income = float(row["traditional_income"] or 0)
+
+        benefit = direct_income - traditional_income
+        benefit_percentage = (
+            (benefit / traditional_income) * 100
+            if traditional_income > 0 else 0
+        )
+
+        history.append({
+            "month": row["month"],
+            "quantity": round(quantity, 2),
+            "traditional_income": round(traditional_income, 2),
+            "direct_income": round(direct_income, 2),
+            "benefit": round(benefit, 2),
+            "benefit_percentage": round(benefit_percentage, 2)
+        })
+
+    return history

@@ -213,3 +213,14 @@ VALUES
 (4027,19,20,32.00,640.00),
 (4027,25,5,120.00,600.00);
 
+ml
+INSERT INTO profit_history
+(crop, location, month, quantity_kg,
+ traditional_price, direct_price, transport_cost,
+ traditional_income, direct_income, benefit, benefit_percentage)
+VALUES
+('Tomato', 'Visakhapatnam', 'January', 500, 28, 31, 800, 14000, 14700, 700, 5.00),
+('Tomato', 'Visakhapatnam', 'February', 500, 27, 30, 750, 13500, 14250, 750, 5.56),
+('Tomato', 'Visakhapatnam', 'March', 500, 29, 32, 850, 14500, 15150, 650, 4.48),
+('Tomato', 'Visakhapatnam', 'April', 500, 26, 31, 800, 13000, 14700, 1700, 13.08),
+('Tomato', 'Visakhapatnam', 'May', 500, 30, 33, 850, 15000, 15650, 650, 4.33);

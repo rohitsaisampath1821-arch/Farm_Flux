@@ -19,7 +19,7 @@ import Orders from "./pages/Orders";
 import Forecast from "./pages/Forecast";
 import MandiPrices from "./pages/MandiPrices";
 import ReceiveComplaints from "./pages/ReceiveComplaints";
-
+import ProfitImpact from "./pages/ProfitImpact";
 
 function App() {
   return (
@@ -63,6 +63,8 @@ function App() {
   path="/receive-complaints"
   element={<ReceiveComplaints />}
 />
+
+<Route path="/profit-impact" element={<ProfitImpact />} />
 
      
       </Routes>
