@@ -366,6 +366,10 @@ function Dashboard() {
                       navigate("/orders");
                     }
 
+                    if (item.name === "Logistics") {
+                      navigate("/logistics");
+                    }
+
                     if (item.name === "Market Insights") {
                       navigate("/market-insights");
                     }
@@ -482,9 +486,9 @@ function Dashboard() {
               <div><b>Find Buyers</b><small>Discover nearby demand</small></div>
               <Navigation size={17} />
             </button>
-            <button className="market-action">
+            <button className="market-action" onClick={() => navigate("/logistics")}>
               <span><Truck size={19} /></span>
-              <div><b>Optimize Route</b><small>Find the best delivery path</small></div>
+              <div><b>Optimize Route</b><small>Open smart procurement & logistics</small></div>
               <Navigation size={17} />
             </button>
             <button className="market-action" onClick={() => navigate("/market-insights")}>

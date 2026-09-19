@@ -15,6 +15,16 @@ from pydantic import BaseModel
 from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy import text
+from pydantic import BaseModel
+from typing import List
+import json
+import math
+import time
+from urllib.parse import quote
+from urllib.request import Request, urlopen
+
+from sqlalchemy import text
+
 
 from app.database import engine
 from app.gemini import client, MODEL_NAME
@@ -2402,3 +2412,520 @@ def get_profit_history():
         })
 
     return history
+
+
+class FarmerInput(BaseModel):
+    farmer_id: str
+    demand: float
+    stock: float
+    transport_cost: float
+
+
+class ProcurementRequest(BaseModel):
+    required_quantity: float
+    farmers: List[FarmerInput]
+
+
+@app.post("/api/logistics/procurement")
+def calculate_procurement(data: ProcurementRequest):
+
+    if data.required_quantity <= 0:
+        return {"error": "Required quantity must be greater than 0"}
+
+    # Calculate priority for every farmer
+    farmers = []
+
+    for farmer in data.farmers:
+        priority = farmer.demand / (1 + farmer.transport_cost)
+
+        farmers.append({
+            "farmer_id": farmer.farmer_id,
+            "demand": farmer.demand,
+            "stock": farmer.stock,
+            "transport_cost": farmer.transport_cost,
+            "priority": priority
+        })
+
+    total_priority = sum(f["priority"] for f in farmers)
+
+    if total_priority == 0:
+        return {"error": "No suitable farmer found"}
+
+    # Initial allocation
+    remaining = data.required_quantity
+
+    for farmer in farmers:
+        proposed = (
+            data.required_quantity
+            * farmer["priority"]
+            / total_priority
+        )
+
+        farmer["allocated_quantity"] = min(
+            proposed,
+            farmer["stock"]
+        )
+
+        remaining -= farmer["allocated_quantity"]
+
+    # Redistribute remaining quantity
+    while remaining > 0.01:
+
+        available = [
+            f for f in farmers
+            if f["stock"] - f["allocated_quantity"] > 0.01
+        ]
+
+        if not available:
+            break
+
+        available_priority = sum(
+            f["priority"] for f in available
+        )
+
+        if available_priority == 0:
+            break
+
+        allocated_this_round = 0
+
+        for farmer in available:
+
+            remaining_stock = (
+                farmer["stock"]
+                - farmer["allocated_quantity"]
+            )
+
+            extra = (
+                remaining
+                * farmer["priority"]
+                / available_priority
+            )
+
+            extra = min(extra, remaining_stock)
+
+            farmer["allocated_quantity"] += extra
+            allocated_this_round += extra
+
+        remaining -= allocated_this_round
+
+        if allocated_this_round == 0:
+            break
+
+    total_allocated = sum(
+        f["allocated_quantity"]
+        for f in farmers
+    )
+
+    return {
+        "required_quantity": data.required_quantity,
+        "total_allocated": round(total_allocated, 2),
+        "remaining_quantity": round(
+            data.required_quantity - total_allocated,
+            2
+        ),
+        "allocations": [
+            {
+                "farmer_id": f["farmer_id"],
+                "demand": f["demand"],
+                "stock": f["stock"],
+                "priority": round(f["priority"], 4),
+                "allocated_quantity": round(
+                    f["allocated_quantity"], 2
+                ),
+                "transport_cost": f["transport_cost"]
+            }
+            for f in farmers
+        ]
+    }
+
+LOCATION_CACHE = {}
+
+def geocode_location(location: str):
+    if not location:
+        return None
+
+    key = location.strip().lower()
+
+    if key in LOCATION_CACHE:
+        return LOCATION_CACHE[key]
+
+    try:
+        url = (
+            "https://nominatim.openstreetmap.org/search"
+            f"?q={quote(location)}&format=json&limit=1"
+        )
+
+        request = Request(
+            url,
+            headers={
+                "User-Agent": "KisanMitra/1.0"
+            }
+        )
+
+        with urlopen(request, timeout=8) as response:
+            data = json.loads(response.read().decode("utf-8"))
+
+        if not data:
+            LOCATION_CACHE[key] = None
+            return None
+
+        result = (
+            float(data[0]["lat"]),
+            float(data[0]["lon"])
+        )
+
+        LOCATION_CACHE[key] = result
+        return result
+
+    except Exception as e:
+        print(f"Geocoding failed for {location}: {e}")
+        LOCATION_CACHE[key] = None
+        return None
+
+
+def haversine(lat1, lon1, lat2, lon2):
+    radius = 6371
+
+    d_lat = math.radians(lat2 - lat1)
+    d_lon = math.radians(lon2 - lon1)
+
+    a = (
+        math.sin(d_lat / 2) ** 2
+        + math.cos(math.radians(lat1))
+        * math.cos(math.radians(lat2))
+        * math.sin(d_lon / 2) ** 2
+    )
+
+    return radius * 2 * math.atan2(
+        math.sqrt(a),
+        math.sqrt(1 - a)
+    )
+
+#LOGISTICS API
+
+@app.get("/api/logistics/network")
+def get_logistics_network():
+
+    farmer_query = text("""
+        SELECT
+            f.sid AS farmer_id,
+            f.name,
+            CONCAT_WS(
+                ', ',
+                NULLIF(f.location, ''),
+                NULLIF(f.district, ''),
+                NULLIF(f.state, ''),
+                'India'
+            ) AS location,
+            f.latitude,
+            f.longitude,
+            COALESCE(stock_data.stock, 0) AS stock,
+            COALESCE(demand_data.demand, 0) AS demand
+        FROM farmers f
+
+        LEFT JOIN (
+            SELECT
+                farmer_sid,
+                SUM(quantity) AS stock
+            FROM products
+            WHERE status = 'available'
+            GROUP BY farmer_sid
+        ) stock_data
+            ON stock_data.farmer_sid = f.sid
+
+        LEFT JOIN (
+            SELECT
+                p.farmer_sid,
+                SUM(oi.quantity) AS demand
+            FROM order_items oi
+            JOIN orders o
+                ON o.sid = oi.order_sid
+            JOIN products p
+                ON p.sid = oi.product_sid
+            WHERE o.status IN ('confirmed', 'shipped', 'delivered')
+            GROUP BY p.farmer_sid
+        ) demand_data
+            ON demand_data.farmer_sid = f.sid
+
+        WHERE f.status = 'active'
+        ORDER BY f.sid
+    """)
+
+    buyer_query = text("""
+        SELECT
+            b.sid AS buyer_id,
+            b.name,
+            CONCAT_WS(
+                ', ',
+                NULLIF(b.location, ''),
+                NULLIF(b.district, ''),
+                NULLIF(b.state, ''),
+                'India'
+            ) AS location,
+            b.latitude,
+            b.longitude,
+            COALESCE(SUM(oi.quantity), 0) AS demand
+        FROM buyers b
+
+        LEFT JOIN orders o
+            ON o.buyer_sid = b.sid
+
+        LEFT JOIN order_items oi
+            ON oi.order_sid = o.sid
+
+        WHERE b.status = 'active'
+          AND (
+              o.status IS NULL
+              OR o.status IN ('confirmed', 'shipped', 'delivered')
+          )
+
+        GROUP BY
+            b.sid,
+            b.name,
+            b.location,
+            b.district,
+            b.state,
+            b.latitude,
+            b.longitude
+
+        ORDER BY b.sid
+    """)
+
+    edge_query = text("""
+        SELECT
+            p.farmer_sid AS farmer_id,
+            o.buyer_sid AS buyer_id,
+            SUM(oi.quantity) AS demand
+        FROM order_items oi
+
+        JOIN orders o
+            ON o.sid = oi.order_sid
+
+        JOIN products p
+            ON p.sid = oi.product_sid
+
+        WHERE o.status IN ('confirmed', 'shipped', 'delivered')
+
+        GROUP BY
+            p.farmer_sid,
+            o.buyer_sid
+
+        ORDER BY demand DESC
+    """)
+
+    with engine.connect() as conn:
+
+        farmer_rows = conn.execute(
+            farmer_query
+        ).mappings().all()
+
+        buyer_rows = conn.execute(
+            buyer_query
+        ).mappings().all()
+
+        edge_rows = conn.execute(
+            edge_query
+        ).mappings().all()
+
+    # ---------------------------------
+    # FARMERS
+    # ---------------------------------
+
+    farmers = []
+
+    for row in farmer_rows:
+
+        farmers.append({
+            "farmer_id": int(row["farmer_id"]),
+            "name": row["name"],
+            "location": row["location"],
+            "latitude": (
+                float(row["latitude"])
+                if row["latitude"] is not None
+                else None
+            ),
+            "longitude": (
+                float(row["longitude"])
+                if row["longitude"] is not None
+                else None
+            ),
+            "demand": float(row["demand"] or 0),
+            "stock": float(row["stock"] or 0),
+            "transport_cost": 0
+        })
+
+    # ---------------------------------
+    # BUYERS
+    # ---------------------------------
+
+    buyers = []
+
+    for row in buyer_rows:
+
+        buyers.append({
+            "buyer_id": int(row["buyer_id"]),
+            "name": row["name"],
+            "location": row["location"],
+            "latitude": (
+                float(row["latitude"])
+                if row["latitude"] is not None
+                else None
+            ),
+            "longitude": (
+                float(row["longitude"])
+                if row["longitude"] is not None
+                else None
+            ),
+            "demand": float(row["demand"] or 0)
+        })
+
+    # ---------------------------------
+    # LOOKUPS
+    # ---------------------------------
+
+    farmer_lookup = {
+        farmer["farmer_id"]: farmer
+        for farmer in farmers
+    }
+
+    buyer_lookup = {
+        buyer["buyer_id"]: buyer
+        for buyer in buyers
+    }
+
+    # ---------------------------------
+    # DEMAND CONNECTIONS
+    # ---------------------------------
+
+    connections = []
+
+    transport_rate = float(
+        os.getenv(
+            "TRANSPORT_COST_PER_KM",
+            "5"
+        )
+    )
+
+    farmer_distance_costs = {}
+
+    for row in edge_rows:
+
+        farmer = farmer_lookup.get(
+            int(row["farmer_id"])
+        )
+
+        buyer = buyer_lookup.get(
+            int(row["buyer_id"])
+        )
+
+        if not farmer or not buyer:
+            continue
+
+        # Skip only the MAP EDGE if coordinates
+        # are not available.
+        if (
+            farmer["latitude"] is None
+            or farmer["longitude"] is None
+            or buyer["latitude"] is None
+            or buyer["longitude"] is None
+        ):
+            continue
+
+        demand = float(
+            row["demand"] or 0
+        )
+
+        distance = haversine(
+            farmer["latitude"],
+            farmer["longitude"],
+            buyer["latitude"],
+            buyer["longitude"]
+        )
+
+        transport_cost = (
+            distance * transport_rate
+        )
+
+        connections.append({
+            "farmer_id": farmer["farmer_id"],
+            "buyer_id": buyer["buyer_id"],
+            "demand": round(demand, 2),
+            "distance_km": round(
+                distance,
+                2
+            ),
+            "transport_cost": round(
+                transport_cost,
+                2
+            ),
+            "from": [
+                farmer["latitude"],
+                farmer["longitude"]
+            ],
+            "to": [
+                buyer["latitude"],
+                buyer["longitude"]
+            ]
+        })
+
+        farmer_distance_costs.setdefault(
+            farmer["farmer_id"],
+            []
+        ).append({
+            "cost": transport_cost,
+            "demand": demand
+        })
+
+    # ---------------------------------
+    # DEMAND-WEIGHTED TRANSPORT COST
+    # ---------------------------------
+
+    for farmer in farmers:
+
+        edges = farmer_distance_costs.get(
+            farmer["farmer_id"],
+            []
+        )
+
+        if not edges:
+            farmer["transport_cost"] = 0
+            continue
+
+        weighted_cost = sum(
+            edge["cost"] * edge["demand"]
+            for edge in edges
+        )
+
+        total_edge_demand = sum(
+            edge["demand"]
+            for edge in edges
+        )
+
+        farmer["transport_cost"] = round(
+            weighted_cost / total_edge_demand,
+            2
+        ) if total_edge_demand > 0 else 0
+
+    # ---------------------------------
+    # RESPONSE
+    # ---------------------------------
+
+    return {
+        "farmers": farmers,
+        "buyers": buyers,
+        "connections": connections,
+        "total_demand": round(
+            sum(
+                farmer["demand"]
+                for farmer in farmers
+            ),
+            2
+        ),
+        "total_stock": round(
+            sum(
+                farmer["stock"]
+                for farmer in farmers
+            ),
+            2
+        )
+    }

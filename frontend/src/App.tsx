@@ -20,6 +20,7 @@ import Forecast from "./pages/Forecast";
 import MandiPrices from "./pages/MandiPrices";
 import ReceiveComplaints from "./pages/ReceiveComplaints";
 import ProfitImpact from "./pages/ProfitImpact";
+import Logistics from "./pages/Logistics";
 
 function App() {
   return (
@@ -65,7 +66,7 @@ function App() {
 />
 
 <Route path="/profit-impact" element={<ProfitImpact />} />
-
+<Route path="/logistics" element={<Logistics />} />
      
       </Routes>
     </BrowserRouter>
