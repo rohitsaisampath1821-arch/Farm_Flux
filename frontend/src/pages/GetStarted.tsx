@@ -12,6 +12,9 @@ import {
 import { Flip } from "gsap/Flip";
 import gsap from "gsap";
 
+const VIDEO_URL =
+  "https://farm-flux.s3.eu-north-1.amazonaws.com/b9984103e8.mp4";
+
 function GetStarted() {
   const [loaded, setLoaded] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
@@ -52,7 +55,9 @@ function GetStarted() {
       {/* NAVBAR */}
       <header
         className={`relative z-50 px-5 pt-5 sm:px-8 lg:px-12 transition-all duration-1000 ${
-          loaded ? "translate-y-0 opacity-100" : "-translate-y-8 opacity-0"
+          loaded
+            ? "translate-y-0 opacity-100"
+            : "-translate-y-8 opacity-0"
         }`}
       >
         <nav className="mx-auto flex max-w-[1450px] items-center justify-between rounded-2xl border border-white/[0.07] bg-[#0b0e0b]/90 px-5 py-3 backdrop-blur-xl sm:px-7">
@@ -72,6 +77,7 @@ function GetStarted() {
               <h1 className="text-xl font-bold tracking-tight">
                 Kisan<span className="text-[#91ad68]">Mitra</span>
               </h1>
+
               <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">
                 Smart Farming
               </p>
@@ -79,7 +85,10 @@ function GetStarted() {
           </button>
 
           <div className="hidden items-center gap-8 lg:flex">
-            <a href="#home" className="relative text-sm font-medium text-[#9ab875]">
+            <a
+              href="#home"
+              className="relative text-sm font-medium text-[#9ab875]"
+            >
               Home
               <span className="absolute -bottom-2 left-0 h-px w-full bg-[#819f5c]" />
             </a>
@@ -100,6 +109,7 @@ function GetStarted() {
             className="group flex items-center gap-3 rounded-full border border-[#819f5c]/25 bg-[#182016] px-5 py-2.5 text-sm font-semibold text-[#a5bf82] transition-all duration-300 hover:border-[#91ad68]/40 hover:bg-[#1c2619] active:scale-95"
           >
             Get Started
+
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8cae62] text-[#101410] transition-transform duration-300 group-hover:translate-x-1">
               <ArrowRight size={15} />
             </span>
@@ -126,9 +136,12 @@ function GetStarted() {
             </div>
 
             <h2 className="text-5xl font-bold leading-[1.05] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+
               <span
                 className={`inline-block transition-all duration-1000 ${
-                  loaded ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+                  loaded
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-8 opacity-0"
                 }`}
               >
                 Your Smart Partner
@@ -138,12 +151,16 @@ function GetStarted() {
 
               <span
                 className={`inline-block transition-all delay-200 duration-1000 ${
-                  loaded ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+                  loaded
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-8 opacity-0"
                 }`}
               >
                 for{" "}
+
                 <span className="relative inline-block text-[#91ad68]">
                   Better Farming
+
                   <span
                     className={`absolute -bottom-2 left-0 h-[2px] w-full origin-left bg-[#728f50] transition-transform duration-1000 ${
                       loaded ? "scale-x-100" : "scale-x-0"
@@ -155,7 +172,9 @@ function GetStarted() {
 
             <p
               className={`mt-8 max-w-xl text-base leading-8 text-white/45 transition-all delay-500 duration-1000 sm:text-lg ${
-                loaded ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+                loaded
+                  ? "translate-y-0 opacity-100"
+                  : "translate-y-6 opacity-0"
               }`}
             >
               KisanMitra connects farmers directly with markets, buyers and
@@ -165,7 +184,9 @@ function GetStarted() {
 
             <div
               className={`mt-9 flex flex-wrap items-center gap-4 transition-all delay-700 duration-1000 ${
-                loaded ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+                loaded
+                  ? "translate-y-0 opacity-100"
+                  : "translate-y-6 opacity-0"
               }`}
             >
               <button
@@ -173,6 +194,7 @@ function GetStarted() {
                 className="group flex items-center gap-3 rounded-full border border-[#819f5c]/20 bg-[#7f9f5c] px-6 py-3.5 font-semibold text-[#0b1009] transition-all duration-300 hover:bg-[#91ad68] active:scale-95"
               >
                 Get Started
+
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0c110b] text-[#a5bf82] transition-transform duration-300 group-hover:translate-x-1">
                   <ArrowRight size={18} />
                 </span>
@@ -209,7 +231,7 @@ function GetStarted() {
                 playsInline
                 preload="auto"
               >
-                <source src="/videos/b9984103e8.mp4" type="video/mp4" />
+                <source src={VIDEO_URL} type="video/mp4" />
               </video>
 
               <div className="absolute inset-0 bg-gradient-to-t from-[#050705]/85 via-transparent to-[#050705]/10" />
@@ -236,6 +258,7 @@ function GetStarted() {
                   <p className="text-xs uppercase tracking-[0.2em] text-white/35">
                     KisanMitra
                   </p>
+
                   <p className="mt-1 text-lg font-semibold text-white/90">
                     Technology for every farmer
                   </p>
@@ -249,7 +272,7 @@ function GetStarted() {
           </div>
         </section>
 
-        {/* FEATURES / FLIP */}
+        {/* FEATURES */}
         <section
           ref={featuresRef}
           id="features"
@@ -349,12 +372,15 @@ function GetStarted() {
               <a href="#home" className="transition hover:text-white/60">
                 Home
               </a>
+
               <a href="#about" className="transition hover:text-white/60">
                 About
               </a>
+
               <a href="#features" className="transition hover:text-white/60">
                 Features
               </a>
+
               <a href="#contact" className="transition hover:text-white/60">
                 Contact
               </a>
@@ -370,18 +396,35 @@ function GetStarted() {
 
       <style>{`
         @keyframes floatOne {
-          0%,100% { transform:translateY(0); }
-          50% { transform:translateY(-7px); }
+          0%,100% {
+            transform: translateY(0);
+          }
+
+          50% {
+            transform: translateY(-7px);
+          }
         }
 
         @keyframes floatTwo {
-          0%,100% { transform:translateY(0); }
-          50% { transform:translateY(7px); }
+          0%,100% {
+            transform: translateY(0);
+          }
+
+          50% {
+            transform: translateY(7px);
+          }
         }
 
         @keyframes featureIn {
-          from { opacity:0; transform:translateY(20px); }
-          to { opacity:1; transform:translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>
@@ -402,7 +445,9 @@ function FloatingCard({
   return (
     <div
       className={`absolute ${
-        right ? "right-4 top-20 sm:right-6" : "bottom-28 left-4 sm:left-6"
+        right
+          ? "right-4 top-20 sm:right-6"
+          : "bottom-28 left-4 sm:left-6"
       } w-[205px] rounded-2xl border border-white/[0.11] bg-[#0b0f0b]/80 p-4 shadow-xl shadow-black/40 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:border-[#7f9f5c]/20 sm:w-[230px]`}
       style={{
         animation: `${right ? "floatOne" : "floatTwo"} ${
@@ -417,8 +462,13 @@ function FloatingCard({
         </div>
 
         <div>
-          <p className="text-xs text-white/35">{title}</p>
-          <p className="text-sm font-semibold text-white/80">{text}</p>
+          <p className="text-xs text-white/35">
+            {title}
+          </p>
+
+          <p className="text-sm font-semibold text-white/80">
+            {text}
+          </p>
         </div>
 
       </div>

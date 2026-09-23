@@ -125,14 +125,20 @@ function Login() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#101411] text-white">
+
+      {/* BACKGROUND VIDEO */}
       <video
         autoPlay
         muted
         loop
         playsInline
+        preload="auto"
         className="absolute inset-0 h-full w-full object-cover"
       >
-        <source src="/videos/b9984103e8.mp4" type="video/mp4" />
+        <source
+          src="https://farm-flux.s3.eu-north-1.amazonaws.com/b9984103e8.mp4"
+          type="video/mp4"
+        />
       </video>
 
       <div className="absolute inset-0 bg-[#080c09]/35" />
@@ -249,9 +255,11 @@ function Login() {
                 : "translate-x-8 opacity-0"
             }`}
           >
+
             {/* ADMIN PORTAL */}
             <div className="relative flex-1 bg-white/[0.025] p-7 backdrop-blur-2xl">
               <div className="relative z-10 flex h-full flex-col justify-center">
+
                 <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-[#9fca72]/20 bg-[#9fca72]/10 px-3 py-1.5 text-xs font-medium text-[#b4d48f]">
                   <ShieldCheck size={13} />
                   Admin Portal
@@ -268,6 +276,7 @@ function Login() {
 
                 <form onSubmit={handleAdminLogin} className="mt-5">
                   <div className="grid grid-cols-2 gap-4">
+
                     <div>
                       <label className="mb-2 block text-xs font-medium text-white/55">
                         Email
@@ -370,6 +379,7 @@ function Login() {
             {/* BUYER PORTAL */}
             <div className="relative flex-1 bg-white/[0.02] p-7 backdrop-blur-2xl">
               <div className="relative z-10 flex h-full flex-col justify-center">
+
                 <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-[#9fca72]/20 bg-[#9fca72]/10 px-3 py-1.5 text-xs font-medium text-[#b4d48f]">
                   <ShoppingCart size={13} />
                   Buyer Portal
@@ -386,6 +396,7 @@ function Login() {
 
                 <form onSubmit={handleBuyerLogin} className="mt-5">
                   <div className="grid grid-cols-2 gap-4">
+
                     <div>
                       <label className="mb-2 block text-xs font-medium text-white/55">
                         Email
@@ -498,8 +509,10 @@ function Login() {
                   <Truck size={12} />
                   Direct farm-to-market access
                 </div>
+
               </div>
             </div>
+
           </section>
         </div>
       </main>
