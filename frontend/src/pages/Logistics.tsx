@@ -1,4 +1,5 @@
 import { API_BASE } from "../config";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Truck, MapPin, Package, Users, Zap, RefreshCw, CheckCircle2, Leaf } from "lucide-react";
 import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -51,7 +52,6 @@ type ProcurementResponse = {
   remaining_quantity: number;
   allocations: Allocation[];
 };
-
 
 const API = import.meta.env.VITE_API_URL || `${API_BASE}`;
 

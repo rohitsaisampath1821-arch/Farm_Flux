@@ -1,4 +1,5 @@
-import { API_BASE } from "../config"
+import { API_BASE } from "../config";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Mail,
@@ -179,7 +180,9 @@ function Buyers() {
     try {
       setError("");
 
-      const response = await fetch(`${API_BASE}/api/buyers`);
+      const response = await fetch(
+        `${API_BASE}/api/buyers`
+      );
 
       if (!response.ok) {
         throw new Error("Unable to fetch buyers");
