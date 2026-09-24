@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { API_BASE } from "../config"
 import {
   ArrowLeft,
   Mail,
@@ -179,9 +179,7 @@ function Buyers() {
     try {
       setError("");
 
-      const response = await fetch(
-        "http://127.0.0.1:8000/api/buyers"
-      );
+      const response = await fetch(`${API_BASE}/api/buyers`);
 
       if (!response.ok) {
         throw new Error("Unable to fetch buyers");

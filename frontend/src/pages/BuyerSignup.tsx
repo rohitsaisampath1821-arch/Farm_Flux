@@ -1,4 +1,5 @@
-import { FormEvent, useState } from "react";
+import { API_BASE } from "../config";
+import { FormEvent, useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -31,6 +32,23 @@ interface BuyerFormData {
 
 function BuyerSignup() {
   const navigate = useNavigate();
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.defaultMuted = true;
+      video.muted = true;
+      const playVideo = () => {
+        video.play().catch(() => {});
+      };
+      video.addEventListener("canplay", playVideo);
+      playVideo();
+      return () => {
+        video.removeEventListener("canplay", playVideo);
+      };
+    }
+  }, []);
 
   const [formData, setFormData] = useState<BuyerFormData>({
     full_name: "",
@@ -87,7 +105,7 @@ function BuyerSignup() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:8000/api/buyers/signup",
+        `${API_BASE}/api/buyers/signup`,
         {
           method: "POST",
           headers: {
@@ -127,10 +145,12 @@ function BuyerSignup() {
       {/* ================= BACKGROUND VIDEO ================= */}
 
       <video
+        ref={videoRef}
         autoPlay
         muted
         loop
         playsInline
+        preload="auto"
         className="absolute inset-0 h-full w-full object-cover"
       >
         <source src={VIDEO_URL} type="video/mp4" />

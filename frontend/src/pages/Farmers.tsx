@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -179,7 +180,7 @@ function Farmers() {
       setError("");
 
       const response = await fetch(
-        "http://127.0.0.1:8000/api/farmers"
+        `${API_BASE}/api/farmers`
       );
 
       if (!response.ok) {
@@ -287,7 +288,7 @@ function Farmers() {
 
       for (const sid of selectedFarmers) {
         const response = await fetch(
-          `http://127.0.0.1:8000/api/farmers/${sid}`,
+          `${API_BASE}/api/farmers/${sid}`,
           {
             method: "DELETE",
           }

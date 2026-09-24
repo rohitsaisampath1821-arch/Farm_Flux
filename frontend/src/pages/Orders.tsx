@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import { useEffect, useMemo, useState } from "react";
 import {
   Search,
@@ -46,7 +47,7 @@ function Orders() {
       setError("");
 
       const response = await fetch(
-        "http://127.0.0.1:8000/api/admin/orders"
+        `${API_BASE}/api/admin/orders`
       );
 
       if (!response.ok) {
@@ -169,7 +170,7 @@ function Orders() {
 
       for (const sid of selectedOrders) {
         const response = await fetch(
-          `http://127.0.0.1:8000/api/orders/${sid}`,
+          `${API_BASE}/api/orders/${sid}`,
           {
             method: "DELETE",
           }

@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
@@ -127,7 +128,7 @@ function Complaints() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/complaints/buyer/${buyer.sid}`
+        `${API_BASE}/api/complaints/buyer/${buyer.sid}`
       );
 
       const data = await response.json();
@@ -163,7 +164,7 @@ function Complaints() {
       setSubmitting(true);
 
       const response = await fetch(
-        "http://127.0.0.1:8000/api/complaints",
+        `${API_BASE}/api/complaints`,
         {
           method: "POST",
           headers: {

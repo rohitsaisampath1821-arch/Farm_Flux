@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -203,7 +204,7 @@ function MandiPrices() {
       setError("");
 
       const response = await fetch(
-        "http://127.0.0.1:8000/api/mandi-prices"
+        `${API_BASE}/api/mandi-prices`
       );
 
       if (!response.ok) {
@@ -330,7 +331,7 @@ function MandiPrices() {
 
       for (const id of selectedPrices) {
         const response = await fetch(
-          `http://127.0.0.1:8000/api/mandi-prices/${id}`,
+          `${API_BASE}/api/mandi-prices/${id}`,
           {
             method: "DELETE",
           }

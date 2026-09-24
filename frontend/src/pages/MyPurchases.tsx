@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Package, ShoppingBag, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -220,7 +221,7 @@ export default function MyPurchases() {
         setLoading(true);
 
         const response = await fetch(
-          `http://127.0.0.1:8000/api/buyers/${buyer.sid}/analytics`
+          `${API_BASE}/api/buyers/${buyer.sid}/analytics`
         );
 
         const data = await response.json();

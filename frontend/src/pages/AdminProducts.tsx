@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -208,7 +209,7 @@ function AdminProducts() {
       setError("");
 
       const response = await fetch(
-        "http://127.0.0.1:8000/api/admin/products"
+        `${API_BASE}/api/admin/products`
       );
 
       if (!response.ok) {
@@ -301,7 +302,7 @@ function AdminProducts() {
 
       for (const sid of selectedProducts) {
         const response = await fetch(
-          `http://127.0.0.1:8000/api/products/${sid}`,
+          `${API_BASE}/api/products/${sid}`,
           {
             method: "DELETE",
           }

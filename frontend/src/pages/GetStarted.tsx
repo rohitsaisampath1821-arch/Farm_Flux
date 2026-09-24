@@ -19,11 +19,28 @@ function GetStarted() {
   const [loaded, setLoaded] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const featuresRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 100);
     return () => clearTimeout(t);
   }, []);
+
+   useEffect(() => {
+    const video = videoRef.current;
+     if (video) {
+       video.defaultMuted = true;
+       video.muted = true;
+       const playVideo = () => {
+         video.play().catch(() => {});
+       };
+       video.addEventListener("canplay", playVideo);
+       playVideo();
+       return () => {
+         video.removeEventListener("canplay", playVideo);
+       };
+     }
+   }, []);
 
   const handleGetStarted = () => {
     window.location.href = "/login";
@@ -224,6 +241,7 @@ function GetStarted() {
             <div className="group relative aspect-[4/4.5] overflow-hidden rounded-[32px] border border-white/[0.10] bg-[#080b08] shadow-2xl shadow-black/50 transition-all duration-700 hover:-translate-y-1 hover:border-white/[0.15]">
 
               <video
+                ref={videoRef}
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1800ms] group-hover:scale-[1.02]"
                 autoPlay
                 muted
@@ -231,6 +249,7 @@ function GetStarted() {
                 playsInline
                 preload="auto"
               >
+                <source src="/videos/b9984103e8.mp4" type="video/mp4" />
                 <source src={VIDEO_URL} type="video/mp4" />
               </video>
 

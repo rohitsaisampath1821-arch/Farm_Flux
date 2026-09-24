@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 
@@ -56,7 +57,7 @@ export default function ProfitImpact() {
     const fetchProfitHistory = async () => {
       try {
         const response = await fetch(
-          "http://127.0.0.1:8000/api/profit/history"
+          `${API_BASE}/api/profit/history`
         );
 
         if (!response.ok) {
@@ -234,7 +235,7 @@ export default function ProfitImpact() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/profit/impact",
+        `${API_BASE}/api/profit/impact`,
         {
           method: "POST",
           headers: {

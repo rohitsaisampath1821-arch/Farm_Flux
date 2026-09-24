@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { API_BASE } from "../config";
 import { Truck, MapPin, Package, Users, Zap, RefreshCw, CheckCircle2, Leaf } from "lucide-react";
 import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -52,7 +52,8 @@ type ProcurementResponse = {
   allocations: Allocation[];
 };
 
-const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+const API = import.meta.env.VITE_API_URL || `${API_BASE}`;
 
 function FitNetwork({ farmers, buyers }: { farmers: Farmer[]; buyers: Buyer[] }) {
   const map = useMap();

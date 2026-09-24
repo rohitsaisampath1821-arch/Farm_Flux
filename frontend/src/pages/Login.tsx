@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { API_BASE } from "../config";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -13,6 +14,7 @@ import {
 
 function Login() {
   const navigate = useNavigate();
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const [loaded, setLoaded] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
@@ -33,6 +35,22 @@ function Login() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.defaultMuted = true;
+      video.muted = true;
+      const playVideo = () => {
+        video.play().catch(() => {});
+      };
+      video.addEventListener("canplay", playVideo);
+      playVideo();
+      return () => {
+        video.removeEventListener("canplay", playVideo);
+      };
+    }
+  }, []);
+
   const handleAdminLogin = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
@@ -42,7 +60,7 @@ function Login() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/auth/admin/login",
+        `${API_BASE}/api/auth/admin/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -87,7 +105,7 @@ function Login() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/auth/buyer/login",
+        `${API_BASE}/api/auth/buyer/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -128,6 +146,7 @@ function Login() {
 
       {/* BACKGROUND VIDEO */}
       <video
+        ref={videoRef}
         autoPlay
         muted
         loop
@@ -135,6 +154,7 @@ function Login() {
         preload="auto"
         className="absolute inset-0 h-full w-full object-cover"
       >
+        <source src="/videos/b9984103e8.mp4" type="video/mp4" />
         <source
           src="https://farm-flux.s3.eu-north-1.amazonaws.com/b9984103e8.mp4"
           type="video/mp4"

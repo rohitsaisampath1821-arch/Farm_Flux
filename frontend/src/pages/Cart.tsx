@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { API_BASE } from "../config";
 import {
   ArrowLeft,
   Minus,
@@ -170,7 +170,7 @@ function Cart() {
 
       setBuying(true);
 
-      const response = await fetch("http://127.0.0.1:8000/api/orders", {
+      const response = await fetch(`${API_BASE}/api/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

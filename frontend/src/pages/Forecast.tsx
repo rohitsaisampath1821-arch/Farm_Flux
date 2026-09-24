@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -223,7 +224,7 @@ function Forecast() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/forecast",
+        `${API_BASE}/api/forecast`,
         {
           method: "POST",
           headers: {

@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -51,7 +52,7 @@ function ReceiveComplaints() {
       setError("");
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/complaints/${complaint.sid}`,
+        `${API_BASE}/api/complaints/${complaint.sid}`,
         {
           method: "PUT",
           headers: {
@@ -102,7 +103,7 @@ function ReceiveComplaints() {
       setError("");
 
       const response = await fetch(
-        "http://127.0.0.1:8000/api/complaints"
+        `${API_BASE}/api/complaints`
       );
 
       const data = await response.json();
