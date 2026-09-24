@@ -5,3 +5,8 @@ sqlalchemy
 bcrypt
 google-genai
 pymysql
+python-dotenv
+pandas
+numpy
+scikit-learn
+joblib
