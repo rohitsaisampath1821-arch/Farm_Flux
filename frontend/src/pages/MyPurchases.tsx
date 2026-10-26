@@ -425,14 +425,15 @@ export default function MyPurchases() {
             </div>
 
             <div className="flex items-center justify-center">
-              <DonutChart
-                data={analytics.categories}
-                centerText={`${analytics.categories.reduce(
-                  (sum, item) => sum + item.percentage,
-                  0
-                )}%`}
-              />
-            </div>
+  <DonutChart
+    data={analytics.categories}
+    centerText={`${Number(
+      analytics.categories
+        .reduce((sum, item) => sum + item.percentage, 0)
+        .toFixed(1)
+    )}%`}
+  />
+</div>
 
             <div className="space-y-3">
               {analytics.categories.map((item, index) => (

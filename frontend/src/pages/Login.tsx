@@ -51,6 +51,20 @@ function Login() {
     }
   }, []);
 
+  // Demo-only credentials: replace these placeholders with dedicated, restricted demo accounts.
+  // Do not use your real administrator password here; frontend values are publicly inspectable.
+  const fillAdminDemo = () => {
+    setAdminEmail("admin@kisanmitra.in");
+    setAdminPassword("Admin@123");
+    setAdminError("");
+  };
+
+  const fillBuyerDemo = () => {
+    setBuyerEmail("rohit@kisanmitra.in");
+    setBuyerPassword("Buyer@123");
+    setBuyerError("");
+  };
+
   const handleAdminLogin = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
@@ -294,7 +308,15 @@ function Login() {
                   operations.
                 </p>
 
-                <form onSubmit={handleAdminLogin} className="mt-5">
+                <button
+                  type="button"
+                  onClick={fillAdminDemo}
+                  className="mt-5 w-fit rounded-xl border border-[#9fca72]/30 bg-[#9fca72]/10 px-4 py-2 text-xs font-medium text-[#b4d48f] transition hover:bg-[#9fca72]/20"
+                >
+                  Fill Admin Demo Credentials
+                </button>
+
+                <form onSubmit={handleAdminLogin} className="mt-3">
                   <div className="grid grid-cols-2 gap-4">
 
                     <div>
@@ -414,7 +436,15 @@ function Login() {
                   from farmers and FPOs.
                 </p>
 
-                <form onSubmit={handleBuyerLogin} className="mt-5">
+                <button
+                  type="button"
+                  onClick={fillBuyerDemo}
+                  className="mt-5 w-fit rounded-xl border border-[#9fca72]/30 bg-[#9fca72]/10 px-4 py-2 text-xs font-medium text-[#b4d48f] transition hover:bg-[#9fca72]/20"
+                >
+                  Fill Buyer Demo Credentials
+                </button>
+
+                <form onSubmit={handleBuyerLogin} className="mt-3">
                   <div className="grid grid-cols-2 gap-4">
 
                     <div>

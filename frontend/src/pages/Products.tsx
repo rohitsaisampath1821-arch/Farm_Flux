@@ -437,7 +437,7 @@ function Products() {
     navigate(
       isBuyer
         ? "/buyer-dashboard"
-        : "/dashboard"
+        : "/buyer-dashboard"
     );
   };
 
